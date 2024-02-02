@@ -4,7 +4,7 @@ import { parseArgs } from "./parseArgs.js";
 import { parseCommand } from "./parseCommand.js";
 import path from "node:path";
 import { failNonExistingDirectory } from "./failNonValidDirectory.js";
-import { appendFile, open, readdir, rename } from "node:fs/promises";
+import { appendFile, open, readdir, rename, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { stdout } from "node:process";
@@ -71,9 +71,9 @@ export class Controller {
   cat = async (pathToFileRaw) => {
     const pathToFile = this.calculatePath(pathToFileRaw);
     const readStream = createReadStream(pathToFile);
-    readStream.on("error", () => {});
+    readStream.on("error", (err) => this.showOperationError(err));
 
-    await pipeline(readStream, stdout);
+    readStream.pipe(stdout);
   };
 
   add = async (pathToFileRaw) => {
@@ -93,9 +93,14 @@ export class Controller {
     const readStream = createReadStream(sourcePath);
     const writeStream = createWriteStream(targetPath);
 
-    readStream.pipe(writeStream);
+    readStream.on("error", (err) => this.showOperationError(err));
+    writeStream.on("error", (err) => this.showOperationError(err));
+    await pipeline(readStream, writeStream);
+  };
 
-    readStream.on("close", () => console.log("\n"));
+  mv = async (sourcePathRaw, targetPathRaw) => {
+    await this.cp(sourcePathRaw, targetPathRaw);
+    await rm(this.calculatePath(sourcePathRaw));
   };
 
   calculatePath = (pathToDirentRaw) => {
