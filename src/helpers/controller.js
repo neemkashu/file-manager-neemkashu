@@ -1,9 +1,9 @@
-import { VALID_COMMANDS } from "../constants.js";
+import { NON_MANAGER_COMMANDS, VALID_COMMANDS } from "../constants.js";
 import { checkValidInput } from "./checkValidInput.js";
 import { parseArgs } from "./parseArgs.js";
 import { parseCommand } from "./parseCommand.js";
 import path from "node:path";
-import fs from "node:fs/promises";
+import { failNonExistingDirectory } from "./failNonValidDirectory.js";
 
 export class Controller {
   constructor(initialPath) {
@@ -19,7 +19,7 @@ export class Controller {
       args.length
     );
 
-    if (command === ".exit") return;
+    if (NON_MANAGER_COMMANDS.includes(command)) return;
 
     if (!isValidCommand) {
       this.showValidationError();
@@ -40,11 +40,10 @@ export class Controller {
         ? pathToDirectory
         : path.join(this.currentPath, pathToDirectory);
 
-      // TODO: replace with check access and isDirectory
-      await fs.opendir(newPath);
+      await failNonExistingDirectory(newPath);
       this.currentPath = newPath;
-    } catch {
-      this.showOperationError();
+    } catch (err) {
+      this.showOperationError(err);
     }
   };
 
@@ -54,7 +53,7 @@ export class Controller {
   showValidationError = () => {
     console.log("Invalid input");
   };
-  showOperationError = () => {
-    console.log("Operation failed");
+  showOperationError = (err) => {
+    console.log(`Operation failed: ${err.message}`);
   };
 }

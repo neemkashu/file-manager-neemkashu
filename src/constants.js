@@ -38,4 +38,9 @@ export const VALID_COMMANDS = {
   decompress: {
     argsAmount: 2,
   },
+  ".exit": {
+    argsAmount: 0,
+  },
 };
+
+export const NON_MANAGER_COMMANDS = [".exit"];
