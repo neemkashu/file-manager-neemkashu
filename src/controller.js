@@ -1,13 +1,15 @@
-import { NON_MANAGER_COMMANDS, VALID_COMMANDS } from "../constants.js";
-import { checkValidInput } from "./checkValidInput.js";
-import { parseArgs } from "./parseArgs.js";
-import { parseCommand } from "./parseCommand.js";
+import { NON_MANAGER_COMMANDS, VALID_COMMANDS } from "./constants.js";
+import { checkValidInput } from "./helpers/checkValidInput.js";
+import { parseArgs } from "./helpers/parseArgs.js";
+import { parseCommand } from "./helpers/parseCommand.js";
 import path from "node:path";
-import { failNonExistingDirectory } from "./failNonValidDirectory.js";
-import { appendFile, open, readdir, rename, rm } from "node:fs/promises";
+import { failNonExistingDirectory } from "./helpers/failNonValidDirectory.js";
+import { appendFile, readdir, rename, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { stdout } from "node:process";
+import { OsReader } from "./modules/os-reader.js";
+import { InputError } from "./modules/errors.js";
 
 export class Controller {
   constructor(initialPath) {
@@ -31,11 +33,20 @@ export class Controller {
       try {
         await this[command](...args);
       } catch (error) {
+        if (error instanceof InputError) {
+          this.showValidationError(error.message);
+          return;
+        }
         this.showOperationError(error);
       }
     }
 
     this.showCurrentPath();
+  };
+  os = async (arg) => {
+    const osReader = new OsReader();
+    const osInfo = osReader.read(arg);
+    console.table(osInfo);
   };
   up = () => {
     this.currentPath = path.join(this.currentPath, "..");
@@ -114,8 +125,13 @@ export class Controller {
   showCurrentPath = () => {
     console.log(`You are currently in ${this.currentPath}`);
   };
-  showValidationError = () => {
-    console.log("Invalid input");
+  showValidationError = (errMessage) => {
+    const prefix = "Invalid input";
+    if (errMessage) {
+      console.log(`${prefix}: ${errMessage}`);
+      return;
+    }
+    console.log(prefix);
   };
   showOperationError = (err) => {
     console.log(`Operation failed: ${err.message}`);

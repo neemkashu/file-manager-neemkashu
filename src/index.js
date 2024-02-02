@@ -3,9 +3,9 @@ import { stdin as input, stdout as output } from "node:process";
 import { parseCliArg } from "./helpers/parseCliArg.js";
 import { speakToUser } from "./helpers/speakToUser.js";
 import { Closer } from "./helpers/closer.js";
-import { Controller } from "./helpers/controller.js";
+import { Controller } from "./controller.js";
 
-const currentPath = process.env.home;
+const currentPath = "C:/data/yandex/folder" ?? process.env.home;
 
 const rl = readline.createInterface({ input, output });
 const closer = new Closer(rl);
