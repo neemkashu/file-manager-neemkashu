@@ -4,6 +4,7 @@ import { parseArgs } from "./parseArgs.js";
 import { parseCommand } from "./parseCommand.js";
 import path from "node:path";
 import { failNonExistingDirectory } from "./failNonValidDirectory.js";
+import { readdir } from "node:fs/promises";
 
 export class Controller {
   constructor(initialPath) {
@@ -45,6 +46,26 @@ export class Controller {
     } catch (err) {
       this.showOperationError(err);
     }
+  };
+
+  ls = async () => {
+    const contents = await readdir(this.currentPath, { withFileTypes: true });
+
+    console.table(
+      contents
+        .map((dirent) => {
+          return {
+            Name: dirent.name,
+            Type: dirent.isFile() ? "file" : "directory",
+          };
+        })
+        .sort(({ Name: NameA, Type: TypeA }, { Name: NameB, Type: TypeB }) => {
+          if (TypeA === TypeB) {
+            return NameA.localeCompare(NameB);
+          }
+          return TypeA.localeCompare(TypeB);
+        })
+    );
   };
 
   showCurrentPath = () => {
