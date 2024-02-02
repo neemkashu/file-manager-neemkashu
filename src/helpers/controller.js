@@ -4,8 +4,8 @@ import { parseArgs } from "./parseArgs.js";
 import { parseCommand } from "./parseCommand.js";
 import path from "node:path";
 import { failNonExistingDirectory } from "./failNonValidDirectory.js";
-import { open, readdir } from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { appendFile, open, readdir, rename } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { stdout } from "node:process";
 
@@ -70,10 +70,30 @@ export class Controller {
 
   cat = async (pathToFileRaw) => {
     const pathToFile = this.calculatePath(pathToFileRaw);
-
     const readStream = createReadStream(pathToFile);
+    readStream.on("error", () => {});
 
-    readStream.pipe(stdout);
+    await pipeline(readStream, stdout);
+  };
+
+  add = async (pathToFileRaw) => {
+    const pathToFile = this.calculatePath(pathToFileRaw);
+    await appendFile(pathToFile, "", { flag: "ax" });
+  };
+
+  rn = async (oldPathRaw, newPathRaw) => {
+    const oldPathToFile = this.calculatePath(oldPathRaw);
+    const newPathToFile = this.calculatePath(newPathRaw);
+    await rename(oldPathToFile, newPathToFile);
+  };
+
+  cp = async (sourcePathRaw, targetPathRaw) => {
+    const sourcePath = this.calculatePath(sourcePathRaw);
+    const targetPath = this.calculatePath(targetPathRaw);
+    const readStream = createReadStream(sourcePath);
+    const writeStream = createWriteStream(targetPath);
+
+    readStream.pipe(writeStream);
 
     readStream.on("close", () => console.log("\n"));
   };
