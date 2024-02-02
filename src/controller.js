@@ -10,6 +10,8 @@ import { pipeline } from "node:stream/promises";
 import { stdout } from "node:process";
 import { OsReader } from "./modules/os-reader.js";
 import { InputError } from "./modules/errors.js";
+import { calculateHash } from "./modules/calculate-hash.js";
+import { compressFromTo, decompressFromTo } from "./modules/compress.js";
 
 export class Controller {
   constructor(initialPath) {
@@ -42,6 +44,22 @@ export class Controller {
     }
 
     this.showCurrentPath();
+  };
+  compress = async (sourcePathRaw, targetPathRaw) => {
+    const sourcePath = this.calculatePath(sourcePathRaw);
+    const targetPath = this.calculatePath(targetPathRaw);
+
+    await compressFromTo(sourcePath, targetPath);
+  };
+  decompress = async (sourcePathRaw, targetPathRaw) => {
+    const sourcePath = this.calculatePath(sourcePathRaw);
+    const targetPath = this.calculatePath(targetPathRaw);
+
+    await decompressFromTo(sourcePath, targetPath);
+  };
+  hash = async (pathToFileRaw) => {
+    const pathToFile = this.calculatePath(pathToFileRaw);
+    calculateHash(pathToFile);
   };
   os = async (arg) => {
     const osReader = new OsReader();
@@ -123,7 +141,7 @@ export class Controller {
   };
 
   showCurrentPath = () => {
-    console.log(`You are currently in ${this.currentPath}`);
+    console.log(`\nYou are currently in ${this.currentPath}`);
   };
   showValidationError = (errMessage) => {
     const prefix = "Invalid input";
