@@ -4,7 +4,10 @@ import { parseArgs } from "./parseArgs.js";
 import { parseCommand } from "./parseCommand.js";
 import path from "node:path";
 import { failNonExistingDirectory } from "./failNonValidDirectory.js";
-import { readdir } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { pipeline } from "node:stream/promises";
+import { stdout } from "node:process";
 
 export class Controller {
   constructor(initialPath) {
@@ -25,7 +28,11 @@ export class Controller {
     if (!isValidCommand) {
       this.showValidationError();
     } else {
-      await this[command](args);
+      try {
+        await this[command](...args);
+      } catch (error) {
+        this.showOperationError(error);
+      }
     }
 
     this.showCurrentPath();
@@ -34,18 +41,11 @@ export class Controller {
     this.currentPath = path.join(this.currentPath, "..");
   };
 
-  cd = async (args) => {
-    try {
-      const pathToDirectory = path.normalize(args[0]);
-      const newPath = path.isAbsolute(pathToDirectory)
-        ? pathToDirectory
-        : path.join(this.currentPath, pathToDirectory);
+  cd = async (pathToDirectoryRaw) => {
+    const pathToDirectory = this.calculatePath(pathToDirectoryRaw);
 
-      await failNonExistingDirectory(newPath);
-      this.currentPath = newPath;
-    } catch (err) {
-      this.showOperationError(err);
-    }
+    await failNonExistingDirectory(pathToDirectory);
+    this.currentPath = pathToDirectory;
   };
 
   ls = async () => {
@@ -66,6 +66,24 @@ export class Controller {
           return TypeA.localeCompare(TypeB);
         })
     );
+  };
+
+  cat = async (pathToFileRaw) => {
+    const pathToFile = this.calculatePath(pathToFileRaw);
+
+    const readStream = createReadStream(pathToFile);
+
+    readStream.pipe(stdout);
+
+    readStream.on("close", () => console.log("\n"));
+  };
+
+  calculatePath = (pathToDirentRaw) => {
+    const pathToDirent = path.normalize(pathToDirentRaw);
+    const newPath = path.isAbsolute(pathToDirent)
+      ? pathToDirent
+      : path.join(this.currentPath, pathToDirent);
+    return newPath;
   };
 
   showCurrentPath = () => {
