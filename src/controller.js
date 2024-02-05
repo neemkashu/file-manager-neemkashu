@@ -20,12 +20,18 @@ export class Controller {
   callCommand = async (lineRaw) => {
     const line = lineRaw.trim();
     const command = parseCommand(line);
-    const args = parseArgs(line);
-    const isValidCommand = checkValidInput(
-      VALID_COMMANDS,
-      command,
-      args.length
-    );
+
+    let isParsedSuccessful = true;
+    let args = null;
+    try {
+      args = parseArgs(line);
+    } catch {
+      isParsedSuccessful = false;
+    }
+
+    const isValidCommand =
+      isParsedSuccessful &&
+      checkValidInput(VALID_COMMANDS, command, args.length);
 
     if (NON_MANAGER_COMMANDS.includes(command)) return;
 
