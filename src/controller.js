@@ -103,12 +103,18 @@ export class Controller {
     );
   };
 
-  cat = async (pathToFileRaw) => {
+  cat = (pathToFileRaw) => {
     const pathToFile = this.calculatePath(pathToFileRaw);
     const readStream = createReadStream(pathToFile);
     readStream.on("error", (err) => this.showOperationError(err));
 
     readStream.pipe(stdout);
+
+    return new Promise((res) => {
+      readStream.on("close", () => {
+        res();
+      });
+    });
   };
 
   add = async (pathToFileRaw) => {
